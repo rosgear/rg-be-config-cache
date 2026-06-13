@@ -1,0 +1,1 @@
+Ext.define('Rg.be.config.cache.FormController',{extend:'Ge.view.form.PanelController',alias:'controller.rg-be-config-cache-form',generateKeyPrefix:me=>me.setValue(`g-${Ge.uniqId()}:`)});
