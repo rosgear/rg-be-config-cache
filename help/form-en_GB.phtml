@@ -12,6 +12,9 @@
 ?>
 <article>
     <h1>Data caching settings form</h1>
+    <div class="g-help-screen g-help-screen--hidable">
+        <img src="<?= $assetsUrl, '/help/form.png' ?>" />
+    </div>
     <p>The data caching settings form can be called from:</p>
     <ul>
         <li>web application configuration panel;</li>
@@ -20,31 +23,113 @@
     </ul>
     <h2>Form tabs</h2>
     <h3>Tab "Cache service settings"</h3>
-    <p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua and has the following fields:</p>
+    <p>General caching service settings are configured using the following fields:</p>
     <ul class="g-help-list">
-        <li><b>Caching method.</b> Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua;</li>
-        <li><b>Cache key prefix.</b> Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua;</li>
-        <li><b>Website article caching.</b> Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua;</li>
-        <li><b>Table data caching.</b> Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua;</li>
-        <li><b>Caching service enabled.</b> Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.</li>
+        <li><span class="g-help-fld g-help-fld_combo"></span> <b>Caching method.</b> You can choose one of the following storage methods for data caching: file system, Redis server, or Memcached server.<br>The choice depends on performance requirements, scalability, and the complexity of the project infrastructure;</li>
+        <li><span class="g-help-fld g-help-fld_text"></span> <b>Cache key prefix.</b> Specify the cache key prefix manually or click the "Generate" button to have the system create a unique prefix automatically.<br>The prefix is added to every key, allowing for the unique identification of cache entries in storage and preventing conflicts with data from other applications or environments;</li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>Caching site content (articles).</b> Enable this option to activate caching for site content.<br>When enabled, the system stores copies of content items in the cache, speeding up their delivery to users. If disabled, content is generated and served upon every request without using the cache;</li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>Caching table data.</b> Enable this option to activate caching for all records of the requested table.<br>When enabled, the system stores query results in the cache and serves them for subsequent requests, thereby reducing database load and improving performance. If the flag is disabled, data is requested directly from the table each time, without using the cache;</li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>Caching service enabled.</b> Enable this flag to allow the caching service to store site data in the cache.<br>
+        When this flag is active, the system uses the cache to speed up page loading and reduce server load. If the flag is disabled, all data is requested and generated upon every request without using the cache.</li>
     </ul>
 
     <h3>Tab "Redis Server"</h3>
-    <p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua and has the following fields:</p>
+    <p>The following configuration fields define the parameters for the service's interaction with the Redis server:</p>
     <ul class="g-help-list">
-        <li><b>DSN.</b> Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.</li>
+        <li><span class="g-help-fld g-help-fld_text"></span> <b>DSN.</b> Default: <em>redis://127.0.0.1:6379</em><br>
+        The DSN (Data Source Name) string can specify an IP address/hostname (and optional port), a socket path, or a password and database index. To enable TLS, the <code>redis</code> scheme must be changed to <code>rediss</code> (the second 's' stands for "secure").</li>
+
+        <li><u>Connection parameters:</u></li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>Lazy connection to backend.</b> Default: <em>disabled</em>.<br>
+        Defers the actual establishment of the connection to Redis until the first command is executed. When enabled, the client object is created immediately, but the TCP connection is not opened until the application sends a real request (get, set, etc.) to Redis. This saves resources on requests that do not use the cache at all and speeds up application startup. It is recommended to keep this enabled: the only downside is that a connection error is detected during the first operation rather than immediately, but this is mitigated by exception handling in the code.</li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>Use persistent connection.</b> Default: <em>disabled</em>.<br>
+        Enables the use of the <code>pconnect</code> method instead of the standard <code>connect</code>: the Redis connection is reused across requests within a single PHP-FPM worker process, rather than being created anew for each request. </li> This reduces TCP handshake overhead and speeds up application performance under load. When enabled, it is also recommended to configure `tcp_keepalive` and ensure the Redis `maxclients` limit accounts for the number of FPM workers. This is not suitable for Pub/Sub or blocking commands; for those, create a separate client using a standard `connect`.</li>
+        <li><span class="g-help-fld g-help-fld_spinner"></span> <b>TCP keepalive connection timeout (sec).</b> Default: <em>0</em> (disabled).<br>
+        Sets the interval for sending TCP keep-alive packets to verify connection health. A value of 0 disables the mechanism: the operating system does not send probe packets, and broken connections may remain in the pool for extended periods. With values greater than 0 (300 is recommended), the OS periodically checks if the server is responding and automatically closes "dead" sockets. This is particularly useful when working via network load balancers or NAT, or during long periods of inactivity between requests in long-running processes.</li>
+        <li><span class="g-help-fld g-help-fld_spinner"></span> <b>Connection attempt timeout (sec).</b> Default: <em>30</em>.<br>
+        Sets the maximum wait time for establishing a TCP connection to Redis. If the server does not respond within the specified time, the attempt fails. A value of 0 means "wait indefinitely"—this is risky when used with PHP-FPM: if Redis is unavailable, workers hang and stop processing requests. A value of 1–2 seconds is recommended for local Redis, and 3–5 seconds for remote Redis. A short timeout allows for quick failure detection and a fallback to a backup mechanism instead of blocking the worker.</li>
+        <li><span class="g-help-fld g-help-fld_spinner"></span> <b>Read attempt timeout (sec.).</b> Default: <em>0 (no limit)</em>.<br>
+        Specifies the maximum time to wait for a response from Redis after sending a command (get, set, etc.). If the server does not send data within the specified time, the operation terminates with a read error. A value of 0 means "wait indefinitely"—if Redis hangs, the worker will remain blocked until the `max_execution_time` limit is reached. A setting of 1–3 seconds is recommended: for cache and sessions, it is better to quickly encounter an error and switch to a fallback than to keep the worker occupied. This is particularly important when persistent connections are enabled, as a "dead" connection might otherwise remain unnoticed in the pool.</li>
+        <li><span class="g-help-fld g-help-fld_spinner"></span> <b>Delay between reconnection attempts (ms.).</b> Default: <em>0</em>.<br>
+        Specifies the pause before the next attempt to connect to Redis if the previous one failed. With a value of 0, the client retries immediately without delay; this creates a risk of a "reconnection avalanche," where all PHP-FPM workers simultaneously try to reach a failed server, overloading the network. A setting of 100–1000 ms is recommended: even a brief pause reduces infrastructure load during widespread failures and gives the server time to recover. For high-load scenarios, it is better to use exponential backoff with jitter at the application level.</li>
     </ul>
 
     <h3>Tab "Memcached Server"</h3>
-    <p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua and has the following fields:</p>
+    <p>The following configuration fields define the parameters for the service's interaction with the Memcached server:</p>
     <ul class="g-help-list">
-        <li><b>DSN.</b> Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.</li>
+        <li><b>DSN.</b> Default: <em>memcached://localhost:11211</em><br>
+        The DSN (Data Source Name) string must include the IP/host (and optional port) or socket path, optional username and password (for SASL authentication), and an optional weight (for server prioritization within the cluster; the value is an integer from 0 to 100, defaulting to zero, where a higher value indicates higher priority).</li>
+
+        <li><u>Connection parameters:</u></li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>Automatic cluster rebalancing.</b> Default: <em>disabled</em>.<br>
+        Enables the automatic exclusion of servers from the cluster if they exceed the specified error limit (server_failure_limit). Excluded nodes are temporarily removed from key distribution, and the remaining servers redistribute the load among themselves. This ensures fault tolerance: if one node fails, the cache continues to operate on the others. This flag works only in conjunction with libketama_compatible and is relevant when multiple Memcached servers are present in the cluster. 
+        </li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>I/O buffering.</b> Default: <em>disabled</em>.<br>
+        When enabled, write commands (set, add, replace, etc.) are not sent to the server immediately but are accumulated in a buffer. The buffer is automatically flushed (sent to the server) upon the first read operation, when the connection is closed, or upon an explicit commit. This reduces the number of network requests during a series of sequential writes and can improve throughput. Not suitable if you need to guarantee that every write is immediately committed to the server. 
+        </li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>"libketama" compatibility.</b> Default: <em>enabled</em>.<br>
+        Enables compatibility mode with the libketama consistent hashing algorithm. When enabled, the key hashing algorithm is set to MD5, and distribution is set to consistent hashing that accounts for server weights. This allows other libketama-based clients (Python, Ruby, etc.) to work seamlessly with the same keys and servers. It is recommended to keep this enabled, especially when working with a multi-server cluster, as it minimizes data loss when adding or removing nodes. 
+        </li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>Asynchronous I/O operations.</b> Default: <em>enabled</em>.<br>
+        Enables non-blocking (asynchronous) I/O mode for Memcached sockets. </li> In this mode, the client does not wait for a response to each write operation before sending the next command, making it the fastest transport mode for storage functions. When enabling this mode, you should specify values for `connect_timeout`, `send_timeout`, and `recv_timeout`, as asynchronous operations can otherwise "hang" during network failures. Disabling it switches the client to synchronous mode, where each command waits for acknowledgment—this is slower but easier to debug.
+        </li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>Use UDP protocol mode.</b> Default: <em>disabled</em>.<br>
+        Switches the transport from TCP to the UDP protocol. In this mode, all operations follow a "fire-and-forget" principle—the client sends commands without waiting for receipt confirmation or checking the result. This can boost speed during bulk write operations on uncongested networks but does not guarantee data delivery. Mixing TCP and UDP servers within a single client is not supported. Not all Memcached library operations function correctly in UDP mode; it is not recommended for critical data. 
+        </li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>Use "no-delay" algorithm.</b> Default: <em>disabled</em>.<br> Disables Nagle's algorithm for TCP connections. Nagle's algorithm combines small outgoing packets into a single packet before transmission to reduce TCP header overhead. Disabling it forces the client to send commands immediately without waiting for data to accumulate; this reduces latency for individual operations, especially when commands are sent one at a time. It can provide a noticeable speed boost in scenarios involving frequent single requests, though the effect is less pronounced with high-volume command streams. 
+        </li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>Enable TCP "keep-alive".</b> Default: <em>enabled</em>.<br>
+        Enables the transmission of TCP keep-alive packets at the socket level to monitor the health of the connection to the Memcached server. When enabled, the operating system periodically checks if the server is responding on idle connections and automatically closes broken sockets. This is useful during long periods of inactivity between requests and when working through network load balancers or NAT, which may "forget" inactive connections. The effect is negligible for short-lived scripts; it is most beneficial for long-running processes (such as queue workers or daemons) where the connection remains open for extended periods. 
+        </li>
+        <li><span class="g-help-fld g-help-fld_checkbox"></span> <b>Randomization of the initial replica read point.</b> Default: <em>disabled</em>.<br>
+        Enables random selection of a server from the replica list for read operations. Instead of always accessing the first replica in the list, the client selects one at random for each request, evenly distributing the load across all available replicas. This prevents the first replica from becoming overloaded and allows for more efficient use of cluster resources when multiple read nodes are present. This setting is relevant only for configurations with replicas; it has no effect otherwise. 
+        </li>
+        <li><span class="g-help-fld g-help-fld_spinner"></span> <b>Socket connection timeout (ms).</b> Default: <em>1000</em>.<br>
+        Specifies the maximum time to wait when establishing a TCP connection to the Memcached server. If the server does not respond within the specified time, the connection attempt is considered failed, and the client moves to the next node or throws an error. The value is in milliseconds, allowing for fine-tuning the response to node unavailability: 200–500 ms is sufficient for local servers, while 1000–3000 ms is appropriate for remote ones. A value that is too low may lead to false failures during brief network delays; a value that is too high may cause workers to block for extended periods if the server goes down. 
+        </li>
+        <li><span class="g-help-fld g-help-fld_combo"></span> <b>Key distribution method.</b> Default: <em>consistent</em>.<br>
+        Determines how the client distributes keys across servers in the cluster:<br>
+            <ul>
+                <li><b>modula</b> — simple modulo division (key → hash → server number). Adding or removing a node causes most keys to be redistributed, leading to massive cache misses. Suitable only for static clusters with a fixed number of nodes.</li>
+                <li><b>consistent</b> — consistent hashing. Keys are distributed along a "ring," and only a portion of the keys are redistributed when a node is added or removed. Recommended for most scenarios.</li>
+                <li><b>ketama</b> — consistent hashing with libketama compatibility. Similar to `consistent`, but with server weights and exact compatibility with other clients based on libketama. Used automatically when `libketama_compatible` is enabled.</li>
+            </ul>
+        </li>
+        <li><span class="g-help-fld g-help-fld_combo"></span> <b>Hashing algorithm.</b> Default: <em>md5</em>.<br>
+        Determines which hash function is applied to the key before distribution across servers.<br>
+            <ul>
+                <li><b>crc</b>: A fast 32-bit algorithm. The default value; suitable for most tasks.</li>
+                <li><b>fnv1_64</b>: 64-bit Fowler–Noll–Vo algorithm. Provides better distribution with a large number of servers.</li>
+                <li><b>fnv1a_64</b>: FNV variant with reversed operation order. Offers slightly better distribution than fnv1_64.</li>
+                <li><b>fnv1_32</b>: 32-bit FNV variant. Faster, but provides poorer distribution in large clusters.</li>
+                <li><b>fnv1a_32</b>: 32-bit FNV variant with reversed order.</li>
+                <li><b>hsieh</b>: Hsieh algorithm — fast, distributes short keys well.</li>
+                <li><b>murmur</b>: MurmurHash — high-quality distribution, moderate speed.</li>
+                <li><b>jenkins</b>: Jenkins algorithm — high-quality distribution with low overhead.</li>
+            </ul>
+        The choice of algorithm affects the uniformity of key distribution across nodes and the hash calculation speed. For small clusters (2–5 nodes), the difference is negligible; for large clusters, fnv1a_64 or murmur are preferable. 
+        </li>
+        <li><span class="g-help-fld g-help-fld_combo"></span> <b>Serializer.</b> Default: <em>php</em>.<br>
+        Determines how the client serializes values before writing to Memcached and deserializes them upon reading:<br>
+            <ul>
+                <li><b>php</b> — standard PHP serialization. Works in all cases but is slower than the others and produces a larger binary result. Suitable if no other clients access the same keys.</li>
+                <li><b>igbinary</b> — compact binary format. Significantly smaller in size and faster for object serialization/deserialization. Requires the igbinary extension to be installed. Recommended if available.</li>
+                <li><b>json</b> — JSON encoding. The result is readable by clients in other languages, but it supports only scalars, arrays, and stdClass; objects lose their type information. Suitable for cross-language caching of simple structures.</li>
+                <li><b>msgpack</b> — MessagePack binary format. More compact than JSON, faster than PHP serialization, and cross-language compatible. Requires the msgpack extension.</li>
+            </ul>
+        </li>
+        <li><span class="g-help-fld g-help-fld_spinner"></span> <b>Connection failure limit.</b> Default: <em>0 (no limit)</em>.<br>
+        Specifies the number of consecutive failed attempts to connect to the server, after which the node is considered "dead." Upon reaching the limit, the client temporarily excludes the server from key distribution and routes requests to the remaining nodes. The excluded node is restored after the timeout specified by the retry_timeout parameter (in seconds) has elapsed. </li> A value of 0 disables the mechanism—the client continues to attempt to access the problematic node with every request, which can lead to delays. 
+        </li>
     </ul>
 
     <h3>Tab "File system"</h3>
-    <p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua and has the following fields:</p>
+    <p>The following configuration fields define the parameters for the service's interaction with the file system:</p>
     <ul class="g-help-list">
-        <li><b>Directory cache.</b> Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.</li>
+        <li><span class="g-help-fld g-help-fld_text"></span> <b>Cache directory.</b> Default: <em>@runtime/cache</em>.<br>
+        The cache directory specifies the location where files are written in PHP format. You can verify that the directory exists and that you have the necessary access rights by using the "Check" button.<br>
+        The directory path must follow this format: @cache, @runtime/cache. 
+        </li>
     </ul>
 
     <h2>Form fields</h2>
